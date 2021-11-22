@@ -1,7 +1,8 @@
 #include <iostream>
 #include <conio.h>
-#define SHOW_INT_NUMBERS 1//иначе вывод подстрокой
-const int VALUE_OF_STRING = 255;
+#include <iomanip>
+const int VALUE_OF_STRING = 256;
+const int PRECISION = 10;
 using namespace std;
 void checkInputString(char*);
 void generateArrayOfPointsOrCommas(char*, int*, int&, int&, int&);
@@ -9,9 +10,8 @@ int checkStringLength(char*);
 int countPointsOrCommasInString(char*);
 int firstDigit(char*, int&);
 int lastDigit(char*, int&);
-void genarateRealNumberString(char*, char*, int*, int, int&, int&, int&, int&);
-void showNumberString(char*);
-void showNumberInt(char*, int&);
+void showNumberString(char*, int*, int, int, int&);
+void showNumberInt(char*, int*, int, int&, int&);
 int checkInputNumber();
 
 int main()
@@ -23,7 +23,7 @@ int main()
 	{
 		int count_points_or_commas = 0;
 		do {
-			cout << "Enter string on English keyboard:" << endl;
+			cout << "Enter string on English keyboard(MAX " << VALUE_OF_STRING - 1 << "):" << endl;
 			checkInputString(my_string);
 			count_points_or_commas = countPointsOrCommasInString(my_string);
 		} while (count_points_or_commas == 0);
@@ -44,20 +44,23 @@ int main()
 		else {
 			cout << "\nThere is only 1 true comma or point in the string" << endl;//index_number не меняем, т.к. он уже 0
 		}
-		char* my_string_numbers;
-		int comma_or_point;
-		my_string_numbers = new char[index_of_last_digit - index_of_first_digit + 3];//+1 место для "+" или "-" и +1 для нуль-терминатора +1  для "." или ","
-		genarateRealNumberString(my_string, my_string_numbers, array_of_points_and_commas_indexes, index_number, length, index_of_first_digit, index_of_last_digit, comma_or_point);
-		if (SHOW_INT_NUMBERS)
+		cout << "What type of variable do you want to print the number?\n1. String\n2. Double" << endl;
+		bool flag = false;
+		do
 		{
-			showNumberInt(my_string_numbers, comma_or_point);
-		}
-		else
-		{
-			showNumberString(my_string_numbers);
-		}
+			switch (checkInputNumber()) {
+			case 1:
+				showNumberString(my_string, array_of_points_and_commas_indexes, index_number, index_of_first_digit, index_of_last_digit);
+				flag = true;
+				break;
+			case 2:
+				showNumberInt(my_string, array_of_points_and_commas_indexes, index_number, index_of_first_digit, index_of_last_digit);
+				flag = true;
+				break;
+			default: cout << "Try again!" << endl;
+			}
+		} while (!flag);
 		delete[]array_of_points_and_commas_indexes;
-		delete[]my_string_numbers;
 		cout << "Do you want to continue? Y/N" << endl;
 		code = _getch();
 	} while (code == 'y' || code == 'Y');
@@ -67,7 +70,7 @@ int main()
 void checkInputString(char* my_string)
 {
 	int i = 0;
-	while (true)
+	while (i < VALUE_OF_STRING - 1)//последний элемент для терминатора
 	{
 		my_string[i] = _getch();
 		if (my_string[i] == 13) break;//enter
@@ -86,6 +89,13 @@ void checkInputString(char* my_string)
 	my_string[i] = '\0';
 }
 
+int checkStringLength(char* my_string)
+{
+	int length = 0;
+	for (length = 0; my_string[length] != '\0'; length++);
+	return length;
+}
+
 int countPointsOrCommasInString(char* my_string)
 {
 	int count = 0;
@@ -100,13 +110,6 @@ int countPointsOrCommasInString(char* my_string)
 		}
 	}
 	return count;
-}
-
-int checkStringLength(char* my_string)
-{
-	int length = 0;
-	for (length = 0; my_string[length] != '\0'; length++);
-	return length;
 }
 
 int firstDigit(char* my_string, int& length)
@@ -148,88 +151,101 @@ void generateArrayOfPointsOrCommas(char* my_string, int* array, int& length, int
 	}
 }
 
-void genarateRealNumberString(char* my_string, char* my_string_numbers, int* array_of, int index_number, int& length, int& index_of_first_digit, int& index_of_last_digit, int& comma_or_point)
+void showNumberString(char* my_string, int* array_of, int index_number, int index_of_first_digit, int& index_of_last_digit)
 {
-	int count = 0;
-	bool flag = false;
 	for (int i = index_of_first_digit; i >= 0; i--)
 	{
 		if (my_string[i] == '+' || my_string[i] == '-')
 		{
-			my_string_numbers[count] = my_string[i];//находим знак "+" или "-" максимально близкий к 1 цифре, если он есть
-			flag = true;
+			cout << my_string[i];//находим знак "+" или "-" максимально близкий к 1 цифре, если он есть
 			break;
 		}
 	}
-	if (flag) count++;
+	for (int i = index_of_first_digit + 1; i < index_of_last_digit; i++)
+	{
+		if (my_string[index_of_first_digit] == '0')//проверка на 0, стоящий на 1 месте
+		{
+			if (my_string[i] >= '0' && my_string[i] <= '9')//если есть ещё цифры
+			{
+				if (array_of[index_number] - i > 0)//если разность индекса нужной запятой и цифры больше 0
+				{
+					index_of_first_digit = i;//эта цифра становится первой
+				}
+			}
+		}
+		else {
+			break;
+		}
+	}
 	for (int i = index_of_first_digit; i < array_of[index_number]; i++)
 	{
 		if (my_string[i] >= '0' && my_string[i] <= '9')
 		{
-			my_string_numbers[count] = my_string[i];
-			count++;
+			cout << my_string[i];
 		}
 	}
-	my_string_numbers[count] = my_string[array_of[index_number]];//для знака препинания
-	comma_or_point = count;
-	count++;
+	cout << my_string[array_of[index_number]];//для знака препинания
+	int count_after_comma = 0;
 	for (int i = array_of[index_number]; i <= index_of_last_digit; i++)
 	{
-		if (my_string[i] >= '0' && my_string[i] <= '9')
+		if (my_string[i] >= '0' && my_string[i] <= '9' && count_after_comma < PRECISION)
 		{
-			my_string_numbers[count] = my_string[i];
-			count++;
+			cout << my_string[i];
+			count_after_comma++;
 		}
-	}
-	my_string_numbers[count] = '\0';
-}
-
-void showNumberString(char* my_string_numbers)
-{
-	for (int i = 0; my_string_numbers[i] != '\0'; i++)
-	{
-		cout << my_string_numbers[i];
 	}
 	cout << endl;
 }
 
-void showNumberInt(char* my_string_numbers, int& comma_or_point)
+void showNumberInt(char* my_string, int* array_of, int index_number, int& index_of_first_digit, int& index_of_last_digit)
 {
 	double number_int = 0;
 	double x = 1;
 	double variable = 0;
-	int start_point = 0;
 	bool negative_number = false;
-	if (my_string_numbers[0] == '+')
+	for (int i = index_of_first_digit; i >= 0; i--)
 	{
-		start_point = 1;
+		if (my_string[i] == '+')
+		{
+			//находим знак "+" или "-" максимально близкий к 1 цифре, если он есть
+			break;
+		}
+		else if (my_string[i] == '-')
+		{
+			negative_number = true;
+			break;
+		}
 	}
-	else if (my_string_numbers[0] == '-')
+	for (int i = array_of[index_number] - 1; i >= index_of_first_digit; i--)//индекс точки, поэтому -1
 	{
-		start_point = 1;
-		negative_number = true;
-	}
-	for (int i = comma_or_point - 1; i >= start_point; i--)//индекс точки, поэтому -1
-	{
-		variable = ((double)my_string_numbers[i] - '0') * x;
-		number_int += variable;
-		x *= 10;
+		if (my_string[i] >= '0' && my_string[i] <= '9')
+		{
+			variable = ((double)my_string[i] - '0') * x;
+			number_int += variable;
+			x *= 10;
+		}
+
 	}
 	double number_double = 0;
 	variable = 0;
 	x = 0.1;
-	for (int i = comma_or_point + 1; my_string_numbers[i] != '\0'; i++)//индекс точки, поэтому +1
+	int count_after_comma = 0;
+	for (int i = array_of[index_number] + 1; i <= index_of_last_digit; i++)//индекс точки, поэтому +1
 	{
-		variable = ((double)my_string_numbers[i] - '0') * x;
-		number_double += variable;
-		x *= 0.1;
+		if (my_string[i] >= '0' && my_string[i] <= '9' && count_after_comma < PRECISION)
+		{
+			variable = ((double)my_string[i] - '0') * x;
+			number_double += variable;
+			x *= 0.1;
+			count_after_comma++;
+		}
 	}
 	if (negative_number)
 	{
 		cout << 0 - (number_int + number_double) << endl;
 	}
 	else {
-		cout << number_int + number_double << endl;
+		cout << setprecision(PRECISION) << number_int + number_double << endl;
 	}
 }
 
